@@ -1,0 +1,11 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.CarTrack" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#62625A</item>
+        <item name="colorPrimaryVariant">#62625A</item>
+
+        <item name="colorSecondary">@color/navy</item>
+        <item name="colorSecondaryVariant">@color/navy</item>
+
+    </style>
+
+</resources>

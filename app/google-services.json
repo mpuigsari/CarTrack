@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "204160790685",
+    "project_id": "cartrack3048",
+    "storage_bucket": "cartrack3048.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204160790685:android:13b975c978863c332ba474",
+        "android_client_info": {
+          "package_name": "com.example.cartrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyz3845AASHwi0RokNTX0UDTI6SqVQF00"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

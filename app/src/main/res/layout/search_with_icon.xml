@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.SearchView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <!-- ImageView for the icon -->
+        <ImageView
+            android:id="@+id/search_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/car_search"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Search Icon"/>
+
+        <!-- SearchView input field -->
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchViewBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:queryHint="Find your car"
+            android:textColor="@android:color/black"
+            android:textColorHint="@color/navy"
+            android:iconifiedByDefault="false"
+            app:queryBackground="@android:color/white"
+            app:searchIcon="@drawable/car_search"
+            style="@style/CustomSearchViewStyle" />
+    </LinearLayout>
+
+</androidx.appcompat.widget.SearchView>

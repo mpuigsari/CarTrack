@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_garage"
+        android:title="Garage"
+        android:icon="@drawable/garage_iconnb" />
+
+    <item
+        android:id="@+id/navigation_map"
+        android:title="Map"
+        android:icon="@drawable/map_icon_nb" />
+
+    <item
+        android:id="@+id/navigation_profile"
+        android:title="Profile"
+        android:icon="@drawable/account_icon_nb" />
+</menu>

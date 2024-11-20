@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/rounded_corner_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start">
+
+        <!-- Close Icon (Top Left) -->
+        <ImageView
+            android:id="@+id/deleteDevice"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="10dp"
+            android:layout_gravity="start"
+            android:src="@drawable/delete"
+            android:layout_weight="1"/>
+
+
+        <!-- Close Icon (Top Right) -->
+        <ImageView
+            android:id="@+id/closeIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="end"
+            android:src="@drawable/close" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/popupTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter Device ID"
+        android:textSize="18sp"
+        android:textColor="@color/navy"
+        android:layout_gravity="center"/>
+
+    <!-- Device ID Input -->
+    <EditText
+        android:id="@+id/deviceIdInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Device ID"
+        android:textColorHint="@color/navy"
+        android:inputType="text"
+        android:background="@drawable/edittext_background"
+        android:padding="10dp"
+        android:textColor="@color/navy"
+        android:layout_marginVertical="10dp"/>
+
+    <!-- Submit Button with Progress Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- Submit Button -->
+        <Button
+            android:id="@+id/submitDeviceButton"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:text="Submit"
+            android:backgroundTint="@color/navy"
+            android:textColor="@android:color/white"
+            />
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:indeterminate="true"
+            android:paddingHorizontal="10dp"/>
+    </LinearLayout>
+
+</LinearLayout>
