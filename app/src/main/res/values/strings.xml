@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">CarTrack</string>
+    <string name="signup">SignUp</string>
+    <string name="reset">Reset</string>
+    <string name="car_name">Car Name</string>
+    <string name="car_model">Car Model</string>
+    <string name="car_name_">What\'s the name of your baby? (✿◡‿◡)</string>
+    <string name="car_model_">Which model? O_O</string>
+    <string name="car_plate">Plate in case you forget (●\'◡\'●)</string>
+    <string name="switch_on_current_location">Switch On Current Location</string>
+    <string name="upload">Add your baby</string>
+    <string name="add_current_location">Add current location</string>
+    <string name="location_not_available">Location not available</string>
+    <string name="add_a_new_car">Add a new car</string>
+    <string name="update">Update</string>
+    <string name="profile">Profile</string>
+    <string name="tailored_to_your_needs">Tailored to your needs</string>
+    <string name="account">Account</string>
+    <string name="notifications">Notifications</string>
+    <string name="save">Save</string>
+    <string name="edit">EDIT</string>
+    <string name="error">Error loading user data</string>
+    <string name="google_error">Cuenta de google</string>
+    <string name="device_not_found">" - Device not found."</string>
+    <string name="device_is_already_linked_to_this_car">" - Device is already linked to this car."</string>
+    <string name="error_device_different_car">" - Error: Device is already linked to a different car!"</string>
+</resources>

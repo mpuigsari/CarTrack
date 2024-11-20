@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CustomSearchViewStyle">
+        <item name="android:background">@drawable/white_background</item>   <!-- Optional: custom background -->
+        <item name="android:iconifiedByDefault">false</item>  <!-- Ensure search icon is shown -->
+        <item name="android:textColor">@android:color/black</item> <!-- Optional: custom text color -->
+    </style>
+    <style name="CircularShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>
