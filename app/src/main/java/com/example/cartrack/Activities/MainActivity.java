@@ -6,9 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.fragment.app.Fragment;
 
-import com.example.cartrack.Fragments.AddCarInfoFragment;
 import com.example.cartrack.Fragments.GarageFragment;
-import com.example.cartrack.Fragments.MapFragment;
+import com.example.cartrack.Fragments.MapaFragment;
 import com.example.cartrack.Fragments.ProfileFragment;
 import com.example.cartrack.R;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -58,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         Fragment selectedFragment = null;
         int itemId = item.getItemId();
         if (itemId == R.id.navigation_map) {
-            selectedFragment = new MapFragment();
+            selectedFragment = new MapaFragment();
         } else if (itemId == R.id.navigation_garage) {
             selectedFragment = new GarageFragment();
         } else if (itemId == R.id.navigation_profile) {
