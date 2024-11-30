@@ -391,8 +391,8 @@ public class GarageFragment extends Fragment {
                             // Log the document ID for debugging
                             Log.d("DeleteDevice", "Device found. Document ID: " + docId);
 
-                            // Delete the device document from Firestore
-                            firestore.collection("Devices").document(docId).delete()
+                            // Delete the link between device and car from Firestore
+                            firestore.collection("Devices").document(docId).update("carDocID","")
                                     .addOnSuccessListener(aVoid -> {
                                         Log.d("DeleteDevice", "Device successfully deleted.");
                                         Toast.makeText(getContext(), "Device deleted successfully", Toast.LENGTH_SHORT).show();

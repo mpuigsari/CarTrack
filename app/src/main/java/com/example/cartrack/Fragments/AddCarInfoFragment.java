@@ -82,7 +82,7 @@ public class AddCarInfoFragment extends Fragment {
     private FirebaseFirestore firestore;
     private StorageReference storageReference;
     private FirebaseAuth firebaseAuth;
-    private String PhotoUrl, CurrentUserID, DocID, carLongitude, carLatitude, caraddress = "";
+    private String PhotoUrl, CurrentUserID, DocID, carLongitude ="", carLatitude="", caraddress = "";
     private ProgressBar progressBar;
     private SwitchMaterial switchlocation;
     private LocationManager locationManager;
@@ -243,6 +243,7 @@ public class AddCarInfoFragment extends Fragment {
             if (data != null && data.getData() != null) {
                 ImageUri = data.getData();
                 Log.d("Launcher", "Image Uri: " + ImageUri.toString());
+                no_image = true;
                 try {
                     bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), ImageUri);
                 } catch (IOException e) {
@@ -254,6 +255,7 @@ public class AddCarInfoFragment extends Fragment {
                 try {
                     imageViewCarPhoto.setImageBitmap(bitmap);
                     Log.d("Launcher", "Image Uri: " + ImageUri.toString());
+                    no_image = true;
                 }catch (Exception e){
                     Log.e("Error", Objects.requireNonNull(e.getMessage()));
                     Toast.makeText(getContext(), "Error loading image", Toast.LENGTH_LONG).show();
@@ -385,8 +387,8 @@ public class AddCarInfoFragment extends Fragment {
         carName = editTextCarName.getText().toString().trim().isEmpty() ? loaded_car.getCarName() : editTextCarName.getText().toString().trim();
         str_carModel = editTextCarModel.getText().toString().trim().isEmpty() ? loaded_car.getCarModel() : editTextCarModel.getText().toString().trim();
         carPlate = editTextCarPlate.getText().toString().trim().isEmpty() ? loaded_car.getCarPlate() : editTextCarPlate.getText().toString().trim();
-        carLongitude = loaded_car.getCarLongitude();
-        carLatitude = loaded_car.getCarLatitude();
+        carLongitude = carLongitude.isEmpty() ? loaded_car.getCarLongitude() : carLongitude;
+        carLatitude = carLatitude.isEmpty() ? loaded_car.getCarLatitude() : carLatitude;
         DocID = loaded_car.getCarDocID();
 
         Log.d("UpdateCarInfo", "Creando modelo de coche");
@@ -408,38 +410,13 @@ public class AddCarInfoFragment extends Fragment {
         private void UpdateImage(){
             Loading();
             if(no_image){
-                Log.d("UploadImage", "Not loaded Image");
+                Log.d("UpdateImage", "Not loaded Image");
                 UploadImage();
                 return;}
             String fileName = ImageUri.getLastPathSegment();
-            Log.d("UploadImage", "Image filename: " + fileName);
-            Log.d("UploadImage", "Image url: " + PhotoUrl);
-
-            FirebaseStorage storage = FirebaseStorage.getInstance("gs://cartrack3048.firebasestorage.app");
-            StorageReference myRef = storage.getReferenceFromUrl(PhotoUrl);
-            myRef.delete()
-                    .addOnSuccessListener(aVoid -> Log.d("DeleteCar", "Image deleted successfully."))
-                    .addOnFailureListener(e -> Log.e("DeleteCar", "Error deleting image: " + e.getMessage()));
-            UploadTask uploadTask = myRef.putFile(ImageUri);
-            uploadTask.addOnProgressListener(taskSnapshot -> {
-                        double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-                        Log.d("UploadImage", "Upload is " + progress + "% done");
-                    })
-                    .addOnSuccessListener(taskSnapshot -> {
-                        Log.d("UploadImage", "Upload successful.");
-                        myRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                            Log.d("UploadImage", "Download URL obtained: " + uri.toString());
-                            PhotoUrl = uri.toString();
-                            UpdateCarInfo();
-                        }).addOnFailureListener(e -> {
-                            Log.e("Error", "Error getting download URL: " + e.getMessage());
-                            Done();
-                        });
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("Error", "Error uploading file: " + e.getMessage());
-                        Done();
-                    });
+            Log.d("UpdateImage", "Image filename: " + fileName);
+            Log.d("UpdateImage", "Image url: " + PhotoUrl);
+            UpdateCarInfo();
         }
 
     private void Loading(){

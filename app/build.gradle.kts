@@ -58,6 +58,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.picasso)
     implementation (libs.play.services.location)
-
+    implementation(libs.play.services.maps)
 
 }
