@@ -1,13 +1,16 @@
 package com.example.cartrack.Model;
+
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class carModel implements Parcelable{
-    private String CarName, CarModel, CarPlate, CarLongitude, CarLatitude, CarImage, CarDocID, CurrentUserID, CarRealAddress;
+public class carModel implements Parcelable {
+    private String CarName, CarModel, CarPlate, CarImage, CarDocID, CurrentUserID, CarRealAddress;
+    private double CarLongitude, CarLatitude; // Updated types for longitude and latitude
+    private float CarAccuracy;
 
-    public carModel(){}
+    public carModel() {}
 
-    public carModel(String carName, String carModel, String carPlate, String carLongitude, String carLatitude, String carImage, String carDocID, String currentUserID, String carRealAddress) {
+    public carModel(String carName, String carModel, String carPlate, double carLongitude, double carLatitude, String carImage, String carDocID, String currentUserID, String carRealAddress, float carAccuracy) {
         this.CarName = carName;
         this.CarModel = carModel;
         this.CarPlate = carPlate;
@@ -17,17 +20,21 @@ public class carModel implements Parcelable{
         this.CarDocID = carDocID;
         this.CurrentUserID = currentUserID;
         this.CarRealAddress = carRealAddress;
-
+        this.CarAccuracy = carAccuracy;
     }
+
     // Constructor for Parcel
     protected carModel(Parcel in) {
         CarName = in.readString();
         CarModel = in.readString();
         CarPlate = in.readString();
         CarRealAddress = in.readString();
-        CarLongitude = in.readString();
-        CarLatitude = in.readString();
+        CarLongitude = in.readDouble(); // Updated for double
+        CarLatitude = in.readDouble();  // Updated for double
         CarImage = in.readString();
+        CarDocID = in.readString();
+        CurrentUserID = in.readString();
+        CarAccuracy = in.readFloat(); // Read accuracy
     }
 
     @Override
@@ -36,9 +43,12 @@ public class carModel implements Parcelable{
         dest.writeString(CarModel);
         dest.writeString(CarPlate);
         dest.writeString(CarRealAddress);
-        dest.writeString(CarLongitude);
-        dest.writeString(CarLatitude);
+        dest.writeDouble(CarLongitude); // Write longitude
+        dest.writeDouble(CarLatitude);  // Write latitude
         dest.writeString(CarImage);
+        dest.writeString(CarDocID);
+        dest.writeString(CurrentUserID);
+        dest.writeDouble(CarAccuracy); // Write accuracy
     }
 
     @Override
@@ -90,19 +100,19 @@ public class carModel implements Parcelable{
         this.CarPlate = carPlate;
     }
 
-    public String getCarLongitude() {
+    public double getCarLongitude() {
         return this.CarLongitude;
     }
 
-    public void setCarLongitude(String carLongitude) {
+    public void setCarLongitude(double carLongitude) {
         this.CarLongitude = carLongitude;
     }
 
-    public String getCarLatitude() {
+    public double getCarLatitude() {
         return this.CarLatitude;
     }
 
-    public void setCarLatitude(String carLatitude) {
+    public void setCarLatitude(double carLatitude) {
         this.CarLatitude = carLatitude;
     }
 
@@ -128,5 +138,13 @@ public class carModel implements Parcelable{
 
     public void setCurrentUserID(String currentUserID) {
         this.CurrentUserID = currentUserID;
+    }
+
+    public float getCarAccuracy() {
+        return this.CarAccuracy;
+    }
+
+    public void setCarAccuracy(float carAccuracy) {
+        this.CarAccuracy = carAccuracy;
     }
 }
