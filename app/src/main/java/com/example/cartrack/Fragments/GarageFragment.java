@@ -45,7 +45,8 @@ public class GarageFragment extends Fragment {
     private FirebaseFirestore firestore;
     private carInfoAdapter carInfoAdapter;
     private ArrayList<carModel> carInfoList;
-    private String longitude, latitude, address, deviceID;
+    private String address, deviceID;
+    private Double longitude, latitude;
     private RecyclerView recyclerViewCarInfo;
     private SearchView searchView;
 
@@ -116,10 +117,10 @@ public class GarageFragment extends Fragment {
                                     longitude = car.getCarLongitude();
                                     latitude = car.getCarLatitude();
 
-                                    if (!TextUtils.isEmpty(longitude) && !TextUtils.isEmpty(latitude)) {
+                                    if (longitude != null && latitude != null) {
                                         try {
-                                            double lat = Double.parseDouble(latitude);
-                                            double lon = Double.parseDouble(longitude);
+                                            double lat = latitude;
+                                            double lon = longitude;
                                             address = getAddressfromLatLong(requireContext(), lat, lon);
                                             car.setCarRealAddress(address);
 
@@ -194,8 +195,8 @@ public class GarageFragment extends Fragment {
         String carDocID = car.getCarDocID();
         Location lastLocation = lastKnownLocations.get(carDocID);
         if (lastLocation != null) {
-            double currentLat = Double.parseDouble(car.getCarLatitude());
-            double currentLon = Double.parseDouble(car.getCarLongitude());
+            double currentLat = car.getCarLatitude();
+            double currentLon = car.getCarLongitude();
             Location currentLocation = new Location("current");
             currentLocation.setLatitude(currentLat);
             currentLocation.setLongitude(currentLon);

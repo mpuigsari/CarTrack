@@ -82,7 +82,7 @@ public class AddCarInfoFragment extends Fragment {
     private FirebaseFirestore firestore;
     private StorageReference storageReference;
     private FirebaseAuth firebaseAuth;
-    private String PhotoUrl, CurrentUserID, DocID, carLongitude ="", carLatitude="", caraddress = "";
+    private String PhotoUrl, CurrentUserID, DocID, caraddress = "";
     private ProgressBar progressBar;
     private SwitchMaterial switchlocation;
     private LocationManager locationManager;
@@ -91,6 +91,8 @@ public class AddCarInfoFragment extends Fragment {
     private LocationCallback locationCallback;
     private carModel loaded_car;
     private boolean no_image = false;
+    private Double carLongitude, carLatitude;
+    private Float carAccuracy;
 
 
 
@@ -117,8 +119,9 @@ public class AddCarInfoFragment extends Fragment {
             }
             if(!compoundButton.isChecked()){
                 txtcarLocation.setText(R.string.add_current_location);
-                carLongitude = "";
-                carLatitude = "";
+                carLongitude = null;
+                carLatitude = null;
+                carAccuracy = null;
             }
         });
 
@@ -186,9 +189,10 @@ public class AddCarInfoFragment extends Fragment {
                     for (Location location : locationResult.getLocations()) {
                         if (location != null) {
                             Log.d("getCurrentLocation", "Location obtained: " + location);
-                            carLatitude = String.valueOf(location.getLatitude());
-                            carLongitude = String.valueOf(location.getLongitude());
-                            caraddress = getAddressfromLatLong(requireContext(), location.getLatitude(), location.getLongitude());
+                            carLatitude = location.getLatitude();
+                            carLongitude = location.getLongitude();
+                            carAccuracy = location.getAccuracy();
+                            caraddress = getAddressfromLatLong(requireContext(), carLatitude, carLongitude);
                             txtcarLocation.setText(caraddress);
                         }}
                     fusedLocationProviderClient.removeLocationUpdates(locationCallback);  // Stop updates after first location is retrieved
@@ -326,7 +330,7 @@ public class AddCarInfoFragment extends Fragment {
             Log.d("UploadCarInfo", "Creando modelo de coche");
             Log.d("UploadCarInfo", "Usuario"+CurrentUserID);
             DocumentReference myRef = firestore.collection("CarInfo").document();
-            carModel carModel = new carModel(carName, str_carModel, carPlate, carLongitude, carLatitude, PhotoUrl, "", CurrentUserID,caraddress);
+            carModel carModel = new carModel(carName, str_carModel, carPlate, carLongitude, carLatitude, PhotoUrl, "", CurrentUserID,caraddress, carAccuracy);
             myRef.set(carModel, SetOptions.merge()).addOnCompleteListener(task -> {
                 if(task.isSuccessful()){
                     DocID = myRef.getId();
@@ -387,14 +391,15 @@ public class AddCarInfoFragment extends Fragment {
         carName = editTextCarName.getText().toString().trim().isEmpty() ? loaded_car.getCarName() : editTextCarName.getText().toString().trim();
         str_carModel = editTextCarModel.getText().toString().trim().isEmpty() ? loaded_car.getCarModel() : editTextCarModel.getText().toString().trim();
         carPlate = editTextCarPlate.getText().toString().trim().isEmpty() ? loaded_car.getCarPlate() : editTextCarPlate.getText().toString().trim();
-        carLongitude = carLongitude.isEmpty() ? loaded_car.getCarLongitude() : carLongitude;
-        carLatitude = carLatitude.isEmpty() ? loaded_car.getCarLatitude() : carLatitude;
+        carLongitude = carLongitude == null ? loaded_car.getCarLongitude() : carLongitude;
+        carLatitude = carLatitude == null ? loaded_car.getCarLatitude() : carLatitude;
+        carAccuracy = carAccuracy == null ? loaded_car.getCarAccuracy() : carAccuracy;
         DocID = loaded_car.getCarDocID();
 
         Log.d("UpdateCarInfo", "Creando modelo de coche");
         Log.d("UpdateCarInfo", "Usuario"+CurrentUserID);
         DocumentReference myRef = firestore.collection("CarInfo").document(DocID);
-        carModel carModel = new carModel(carName, str_carModel, carPlate, carLongitude, carLatitude, PhotoUrl, DocID, CurrentUserID,caraddress);
+        carModel carModel = new carModel(carName, str_carModel, carPlate, carLongitude, carLatitude, PhotoUrl, DocID, CurrentUserID,caraddress, carAccuracy);
         myRef.set(carModel, SetOptions.merge()).addOnCompleteListener(task -> {
             if(task.isSuccessful()){
                 Toast.makeText(getContext(), "Update Successful", Toast.LENGTH_LONG).show();
