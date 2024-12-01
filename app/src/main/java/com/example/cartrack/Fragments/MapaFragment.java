@@ -20,7 +20,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -28,6 +27,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+
 import com.example.cartrack.Model.carModel;
 import com.example.cartrack.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -35,14 +35,16 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
@@ -54,6 +56,9 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
     private FirebaseFirestore firestore;
     private LocationManager locationManager;
     private HashMap<String, Location> lastKnownLocations = new HashMap<>();
+    private HashMap<String, Marker> carMarkers = new HashMap<>();
+    private HashMap<String, Circle> carCircles = new HashMap<>();
+    private HashMap<String, String> carStates = new HashMap<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -74,13 +79,12 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
 
         return view;
     }
+
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
-                    // Permission granted
                     Log.d("ActivityResultLauncher", "Permission granted");
                 } else {
-                    // Permission denied
                     Log.d("ActivityResultLauncher", "Permission denied");
                 }
             });
@@ -89,16 +93,14 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
         locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             Log.d("CheckGPS", "GPS is disabled");
-            OnGPS();    // Enable GPS
-            CheckGPS(); // Recursive cannot progress until permission granted
+            OnGPS();
+            CheckGPS();
         } else {
             Log.d("CheckGPS", "GPS is enabled");
             if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // Request permission
                 requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-                CheckGPS(); // Recursive cannot progress until permission granted
+                CheckGPS();
             } else {
-                // Permission already granted -> Create MAP
                 SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
                 if (mapFragment == null) {
                     mapFragment = SupportMapFragment.newInstance();
@@ -137,54 +139,140 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
             return true;
         });
 
-        firestore.collection("CarInfo").addSnapshotListener((snapshots, e) -> {
+        // Set up Firestore listener for real-time updates
+        firestore.collection("CarInfo").whereEqualTo("currentUserID", FirebaseAuth.getInstance().getCurrentUser().getUid()).addSnapshotListener((snapshots, e) -> {
             if (e != null) {
                 Log.e("Firestore", "Error fetching car data", e);
                 return;
             }
-            googleMap.clear();
+
             if (snapshots == null || snapshots.isEmpty()) {
                 Log.w("Firestore", "No car data found");
                 return;
             }
 
-            for (QueryDocumentSnapshot doc : snapshots) {
-                try {
-                    carModel car = doc.toObject(carModel.class);
-                    LatLng location = new LatLng(car.getCarLatitude(), car.getCarLongitude());
+            for (DocumentChange documentChange : snapshots.getDocumentChanges()) {
+                carModel car = documentChange.getDocument().toObject(carModel.class);
+                LatLng location = new LatLng(car.getCarLatitude(), car.getCarLongitude());
 
-                    Drawable vectorDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.tractor);
-                    Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-                    vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                    vectorDrawable.draw(canvas);
-
-                    Marker marker = googleMap.addMarker(new MarkerOptions()
-                            .position(location)
-                            .title(car.getCarName())
-                            .icon(BitmapDescriptorFactory.fromBitmap(bitmap)));
-                    if (marker != null) {
-                        marker.setTag(car);
-                    }
-
-                    // Store last known location
-                    Location currentLocation = new Location("current");
-                    currentLocation.setLatitude(car.getCarLatitude());
-                    currentLocation.setLongitude(car.getCarLongitude());
-                    lastKnownLocations.put(car.getCarDocID(), currentLocation);
-
-                    googleMap.addCircle(new CircleOptions()
-                            .center(location)
-                            .radius(car.getCarAccuracy())  // Ensure car.getCarAccuracy() is in meters for proper scaling
-                            .strokeWidth(3f)  // Thicker border for a more prominent look
-                            .strokeColor(Color.YELLOW)  // Bold color for visibility, e.g., RED or a dark shade
-                            .fillColor(0x66FFFF00)  // Semi-transparent fill, using hex RGBA (66 for transparency)
-                    );
-                } catch (Exception error) {
-                    Log.e("GetCarInfo", "Error parsing car data: " + error.getMessage());
+                switch (documentChange.getType()) {
+                    case ADDED:
+                        addCarMarker(car, location);
+                        break;
+                    case MODIFIED:
+                        updateCarMarker(car, location);
+                        break;
+                    case REMOVED:
+                        removeCarMarker(car);
+                        break;
                 }
             }
         });
+    }
+
+    private void addCarMarker(carModel car, LatLng location) {
+        if (!isAdded()) {
+            Log.w("MapaFragment", "Fragment is not attached to context. Cannot add car marker.");
+            return;
+        }
+        updateCarState(car);
+
+        if (carMarkers.containsKey(car.getCarDocID())) {
+            updateCarMarker(car, location);
+            return;
+        }
+
+        Drawable vectorDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.tractor);
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        vectorDrawable.draw(canvas);
+
+        Marker marker = googleMap.addMarker(new MarkerOptions()
+                .position(location)
+                .title(car.getCarName())
+                .icon(BitmapDescriptorFactory.fromBitmap(bitmap)));
+        if (marker != null) {
+            marker.setTag(car);
+            carMarkers.put(car.getCarDocID(), marker);
+        }
+
+        Location currentLocation = new Location("current");
+        currentLocation.setLatitude(car.getCarLatitude());
+        currentLocation.setLongitude(car.getCarLongitude());
+        lastKnownLocations.put(car.getCarDocID(), currentLocation);
+
+        CircleOptions circleOptions = new CircleOptions()
+                .center(location)
+                .radius(car.getCarAccuracy())
+                .strokeWidth(3f)
+                .strokeColor(Color.YELLOW)
+                .fillColor(0x66FFFF00);
+        Circle circle = googleMap.addCircle(circleOptions);
+        carCircles.put(car.getCarDocID(), circle);
+    }
+
+    private void updateCarMarker(carModel car, LatLng newLocation) {
+        updateCarState(car);
+
+        Marker marker = carMarkers.get(car.getCarDocID());
+        if (marker != null) {
+            marker.setPosition(newLocation);
+            marker.setTag(car);
+            Log.d("Firestore", "Updated car location: " + car.getCarDocID());
+
+            // Update circle accuracy radius
+            Circle circle = carCircles.get(car.getCarDocID());
+            if (circle != null) {
+                circle.setCenter(newLocation);
+                circle.setRadius(car.getCarAccuracy());
+            }
+        } else {
+            addCarMarker(car, newLocation);
+        }
+
+        Location currentLocation = new Location("current");
+        currentLocation.setLatitude(car.getCarLatitude());
+        currentLocation.setLongitude(car.getCarLongitude());
+        lastKnownLocations.put(car.getCarDocID(), currentLocation);
+    }
+
+    private void removeCarMarker(carModel car) {
+        Marker marker = carMarkers.remove(car.getCarDocID());
+        if (marker != null) {
+            marker.remove();
+        }
+
+        Circle circle = carCircles.remove(car.getCarDocID());
+        if (circle != null) {
+            circle.remove();
+        }
+
+        lastKnownLocations.remove(car.getCarDocID());
+        carStates.remove(car.getCarDocID());
+    }
+
+    private void updateCarState(carModel car) {
+        Location lastLocation = lastKnownLocations.get(car.getCarDocID());
+        String state;
+        if (lastLocation != null) {
+            Location currentLocation = new Location("current");
+            currentLocation.setLatitude(car.getCarLatitude());
+            currentLocation.setLongitude(car.getCarLongitude());
+            float distance = lastLocation.distanceTo(currentLocation);
+            if (distance > 10) {
+                state = "Moving";
+            } else {
+                state = "Stationary";
+            }
+        } else {
+            state = "Unknown";
+        }
+        carStates.put(car.getCarDocID(), state);
+    }
+
+    private String getCarState(String carDocID) {
+        return carStates.getOrDefault(carDocID, "Unknown");
     }
 
     private void displayCarInfo(Marker marker) {
@@ -208,24 +296,18 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
             carModelTextView.setText(car.getCarModel());
             carPlateTextView.setText(car.getCarPlate());
             carLocationTextView.setText(car.getCarRealAddress());
-            Picasso.get().load(car.getCarImage()).networkPolicy(NetworkPolicy.OFFLINE).into(carImageView);
+            Picasso.get().load(car.getCarImage()).networkPolicy(NetworkPolicy.OFFLINE).into(carImageView, new com.squareup.picasso.Callback(){
+            @Override
+            public void onSuccess() {
+                Log.d("Picasso", "Image loaded from cache.");}
+            @Override
+            public void onError(Exception e) {
+                Log.w("Picasso", "Cache miss, loading from network.");
+                // If not in cache, load from network
+                Picasso.get().load(car.getCarImage()).into(carImageView);}
+        });
 
-            // Check car movement and update state
-            Location lastLocation = lastKnownLocations.get(car.getCarDocID());
-            if (lastLocation != null) {
-                Location currentLocation = new Location("current");
-                currentLocation.setLatitude(car.getCarLatitude());
-                currentLocation.setLongitude(car.getCarLongitude());
-
-                float distance = lastLocation.distanceTo(currentLocation);
-                if (distance > 10) {
-                    carStateTextView.setText("Moving");
-                } else {
-                    carStateTextView.setText("Stationary");
-                }
-            } else {
-                carStateTextView.setText("Unknown");
-            }
+            carStateTextView.setText(getCarState(car.getCarDocID())); // Use the updated car state
         }
 
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(getContext());
