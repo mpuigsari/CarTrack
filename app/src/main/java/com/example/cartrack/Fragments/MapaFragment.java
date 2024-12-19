@@ -145,25 +145,45 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
         });
 
         fetchCarsAndDisplay();
+        listenToCarInfoChanges();
     }
 
     private void fetchCarsAndDisplay() {
         String currentUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
         firestore.collection("CarInfo")
                 .whereEqualTo("currentUserID", currentUserID)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        carModel car = doc.toObject(carModel.class);
+                        car.setCarDocID(doc.getId());
+
+                        addOrUpdateCarMarker(car, new LatLng(car.getCarLatitude(), car.getCarLongitude()));
+                        fetchDeviceIDAndSetupListener(car);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("Firestore", "Error fetching cars", e));
+    }
+    private void listenToCarInfoChanges() {
+        String currentUserID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        firestore.collection("CarInfo")
+                .whereEqualTo("currentUserID", currentUserID)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null) {
-                        Log.e("Firestore", "Error fetching cars", error);
+                        Log.e("Firestore", "Error listening to car updates", error);
                         return;
                     }
+
                     if (snapshot != null) {
                         for (DocumentChange documentChange : snapshot.getDocumentChanges()) {
                             carModel car = documentChange.getDocument().toObject(carModel.class);
                             car.setCarDocID(documentChange.getDocument().getId());
+
                             switch (documentChange.getType()) {
                                 case ADDED:
                                 case MODIFIED:
                                     addOrUpdateCarMarker(car, new LatLng(car.getCarLatitude(), car.getCarLongitude()));
+                                    fetchDeviceIDAndSetupListener(car);
                                     break;
                                 case REMOVED:
                                     removeCarMarker(car.getCarDocID());
@@ -174,23 +194,59 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
                 });
     }
 
-    private void fetchRTDBLocation(String carDocID, String deviceID) {
+    private void fetchDeviceIDAndSetupListener(carModel car) {
+        firestore.collection("Devices")
+                .whereEqualTo("carDocID", car.getCarDocID())
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        String deviceID = querySnapshot.getDocuments().get(0).getString("deviceID");
+                        if (deviceID != null) {
+                            deviceToCarMap.put(deviceID, car.getCarDocID());
+                            setupRTDBListener(deviceID, car.getCarDocID());
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("Firestore", "Error fetching deviceID", e));
+    }
+
+    private void setupRTDBListener(String deviceID, String carDocID) {
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    Double latitude = snapshot.child("latitude").getValue(Double.class);
-                    Double longitude = snapshot.child("longitude").getValue(Double.class);
-                    Float accuracy = snapshot.child("accuracy").getValue(Float.class);
-                    if (latitude != null && longitude != null) {
-                        updateCarLocationInFirestore(carDocID, latitude, longitude, accuracy);
+                    Double newLatitude = snapshot.child("latitude").getValue(Double.class);
+                    Double newLongitude = snapshot.child("longitude").getValue(Double.class);
+                    Float newAccuracy = snapshot.child("accuracy").getValue(Float.class);
+
+                    // Retrieve the last known values
+                    String carDocID = deviceToCarMap.get(deviceID);
+                    Location lastLocation = lastKnownLocations.get(carDocID);
+
+                    if (newLatitude != null && newLongitude != null) {
+                        if (lastLocation == null || hasLocationChanged(lastLocation, newLatitude, newLongitude)) {
+                            updateCarLocationInFirestore(carDocID, newLatitude, newLongitude, newAccuracy);
+
+                            // Update last known location
+                            Location updatedLocation = new Location("RTDB");
+                            updatedLocation.setLatitude(newLatitude);
+                            updatedLocation.setLongitude(newLongitude);
+                            lastKnownLocations.put(carDocID, updatedLocation);
+                        }
                     }
                 }
             }
 
+            private boolean hasLocationChanged(Location lastLocation, double newLatitude, double newLongitude) {
+                float[] results = new float[1];
+                Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(), newLatitude, newLongitude, results);
+                return results[0] > 1; // Change threshold (e.g., 1 meter)
+            }
+
+
             @Override
             public void onCancelled(DatabaseError error) {
-                Log.e("RTDB", "Error fetching location for deviceID: " + deviceID, error.toException());
+                Log.e("RTDB", "Error listening to RTDB: " + error.getMessage(), error.toException());
             }
         };
 
@@ -254,32 +310,24 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
                 .fillColor(0x66FFFF00);
         carCircles.put(car.getCarDocID(), googleMap.addCircle(circleOptions));
     }
-
     private void removeCarMarker(String carDocID) {
+        // Remove the marker from the map
         Marker marker = carMarkers.remove(carDocID);
-        if (marker != null) marker.remove();
-        Circle circle = carCircles.remove(carDocID);
-        if (circle != null) circle.remove();
-    }
-
-    private void updateCarState(carModel car) {
-        Location lastLocation = lastKnownLocations.get(car.getCarDocID());
-        Location currentLocation = new Location("current");
-        currentLocation.setLatitude(car.getCarLatitude());
-        currentLocation.setLongitude(car.getCarLongitude());
-
-        String state;
-        if (lastLocation != null && lastLocation.distanceTo(currentLocation) > 10) {
-            state = "Moving";
-        } else if (lastLocation != null) {
-            state = "Stationary";
-        } else {
-            state = "Unknown";
+        if (marker != null) {
+            marker.remove();
         }
 
-        carStates.put(car.getCarDocID(), state);
-        lastKnownLocations.put(car.getCarDocID(), currentLocation);
+        // Remove the circle associated with the marker
+        Circle circle = carCircles.remove(carDocID);
+        if (circle != null) {
+            circle.remove();
+        }
+
+        // Clean up associated state
+        lastKnownLocations.remove(carDocID);
+        carStates.remove(carDocID);
     }
+
 
     private void displayCarInfo(Marker marker) {
         View carInfoView = LayoutInflater.from(getContext()).inflate(R.layout.layout_carinfo, null);
@@ -321,6 +369,25 @@ public class MapaFragment extends Fragment implements OnMapReadyCallback {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
         bottomSheetDialog.setContentView(carInfoView);
         bottomSheetDialog.show();
+    }
+
+    private void updateCarState(carModel car) {
+        Location lastLocation = lastKnownLocations.get(car.getCarDocID());
+        Location currentLocation = new Location("current");
+        currentLocation.setLatitude(car.getCarLatitude());
+        currentLocation.setLongitude(car.getCarLongitude());
+
+        String state;
+        if (lastLocation != null && lastLocation.distanceTo(currentLocation) > 10) {
+            state = "Moving";
+        } else if (lastLocation != null) {
+            state = "Stationary";
+        } else {
+            state = "Unknown";
+        }
+
+        carStates.put(car.getCarDocID(), state);
+        lastKnownLocations.put(car.getCarDocID(), currentLocation);
     }
 
     @Override
