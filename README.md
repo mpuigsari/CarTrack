@@ -80,5 +80,5 @@ CarTrack follows a **modular IoT architecture**:
 CarTrack shows how mobile networks and IoT devices can be combined into a user-friendly and scalable vehicle monitoring system. The Android app in this repository represents the front-end of a complete, cloud-connected tracking solution.
 
 > 📦 *Note: This repository includes only the Android application code. IoT firmware and backend setup are documented in the project report.*
-📄 [Download the Project Report from Releases](https://github.com/yourusername/CarTrack/releases)
+📄 [Download the Project Report from Releases](https://github.com/mpuigsari/CarTrack/releases)
 
